@@ -2,7 +2,7 @@ const validator = (schema) => {
   return (req, res, next) => {
     const { error } = schema.validate(req.body);
     if (error) {
-      res.status(400).json({
+      res.json({
         status: "error",
         code: 404,
         message: error.message,
