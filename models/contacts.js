@@ -1,5 +1,4 @@
 const { Contacts } = require("../schemas/contacts");
-// const { nanoid } = require("nanoid");
 
 const listContacts = async () => {
   return Contacts.find();
@@ -14,10 +13,10 @@ const removeContact = async (contactId) => {
 };
 
 // data es req.body
-const addContact = async (data) => {
-  const { name, email, phone } = data;
+const addContact = async (contactData) => {
+  const { name, email, phone, owner } = contactData;
 
-  return Contacts.create({ name, email, phone });
+  return Contacts.create({ name, email, phone, owner });
 };
 
 const updateContact = async (contactId, data) => {

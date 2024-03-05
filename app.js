@@ -4,12 +4,16 @@ const cors = require("cors");
 
 const app = express();
 const contactsRouter = require("./routes/api/contacts");
+const UserRouter = require("./routes/api/user");
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 
 app.use(logger(formatsLogger));
 app.use(cors());
 app.use(express.json());
+
+require("./config/config-passport");
 app.use("/api/contacts", contactsRouter);
+app.use("/api/users", UserRouter);
 
 app.use((_, res, __) => {
   res.status(404).json({

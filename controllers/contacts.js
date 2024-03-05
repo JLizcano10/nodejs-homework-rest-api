@@ -1,9 +1,24 @@
 const contacts = require("../models/contacts");
 const HttpError = require("../helpers/httpError");
+const { Contacts } = require("../schemas/contacts");
 
 const getContacts = async (req, res, next) => {
+  const { page, limit, favorite } = req.query;
+  const { _id: ownerId } = req.user;
+  const limitInt = parseInt(limit);
+  const skipInt = (parseInt(page) - 1) * limitInt;
+  let searchQuery = { owner: ownerId };
+  // let searchQuery = { $or: [{ owner: ownerId }, { owner: null }] }; //Para que nuevo usuario que no ha agreagado sus propios usuarios vea al menos los 10 contactos basicos
+
+  if (favorite === "true") {
+    searchQuery.favorite = true;
+  }
+
   try {
-    const result = await contacts.listContacts();
+    const result = await Contacts.find(searchQuery)
+      .skip(skipInt)
+      .limit(limitInt);
+
     return res.json({
       status: "Success",
       code: 200,
@@ -16,9 +31,12 @@ const getContacts = async (req, res, next) => {
 
 const getById = async (req, res, next) => {
   const { contactId } = req.params;
+  const { _id: ownerId } = req.user;
+
   try {
     const result = await contacts.getContactById(contactId);
-    if (!result) {
+    // Debo pasar a string result.owner y ownerId porque vienen de objetos que aunque tengan el mismo id son objetos que tienen propiedades diferentes por eso sin pasarlos a string no funciona la comparacion.
+    if (!result || result.owner.toString() !== ownerId.toString()) {
       throw HttpError.HttpError(404, "Not found");
     }
     return res.json({
@@ -32,8 +50,10 @@ const getById = async (req, res, next) => {
 };
 
 const addContact = async (req, res, next) => {
+  const { _id: ownerId } = req.user;
+  const contactData = { ...req.body, owner: ownerId };
   try {
-    const result = await contacts.addContact(req.body);
+    const result = await contacts.addContact(contactData);
     return res.json({
       status: "Success",
       code: 201,
