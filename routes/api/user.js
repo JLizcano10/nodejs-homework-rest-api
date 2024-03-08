@@ -1,6 +1,7 @@
 const express = require("express");
 const ctrl = require("../../controllers/user");
 const auth = require("../../middlewares/auth");
+const upload = require("../../middlewares/multerAvatar");
 
 const router = express.Router();
 
@@ -13,5 +14,7 @@ router.get("/current", auth, ctrl.currentUser);
 router.get("/logout", auth, ctrl.logoutUser);
 
 router.patch("/", auth, ctrl.updateSubscription);
+
+router.post("/avatar", auth, upload.single("avatar"), ctrl.updateAvatar);
 
 module.exports = router;
