@@ -8,7 +8,7 @@ const path = require("path");
 const Jimp = require("jimp");
 const gravatar = require("gravatar");
 
-const storeAvatar = path.join(process.cwd(), "public/avatar");
+const storeAvatar = path.join(process.cwd(), "public/avatars");
 
 const signupUser = async (req, res, next) => {
   const { email, password } = req.body;

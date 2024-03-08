@@ -17,7 +17,7 @@ const createFolderIsNotExist = async (folder) => {
 
 // Rutas de los directorios que deseas crear si no existen
 const uploadDir = "./tmp";
-const storeAvatar = "./public/avatar";
+const storeAvatar = "./public/avatars";
 
 // Crear directorios necesarios si no existen
 createFolderIsNotExist(uploadDir);

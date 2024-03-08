@@ -14,6 +14,7 @@ app.use(express.json());
 require("./config/config-passport");
 app.use("/api/contacts", contactsRouter);
 app.use("/api/users", UserRouter);
+app.use("/avatars", express.static("public/avatars"));
 
 app.use((_, res, __) => {
   res.status(404).json({
