@@ -2,11 +2,13 @@ const jwt = require("jsonwebtoken");
 const User = require("../schemas/user");
 const HttpError = require("../helpers/httpError");
 require("dotenv").config();
-const { SECRET } = process.env;
+const { SECRET, BASE_URL } = process.env;
 const fs = require("fs").promises;
 const path = require("path");
 const Jimp = require("jimp");
 const gravatar = require("gravatar");
+const sendEmail = require("../helpers/sendEmail");
+const { nanoid } = require("nanoid");
 
 const storeAvatar = path.join(process.cwd(), "public/avatars");
 
@@ -26,9 +28,22 @@ const signupUser = async (req, res, next) => {
 
   try {
     const avatarURL = gravatar.url(email);
-    const newUser = new User({ email, password, avatarURL });
+    const verificationToken = nanoid();
+    const newUser = new User({ email, password, avatarURL, verificationToken });
     newUser.setPassword(password);
     await newUser.save();
+
+    const verifyEmail = {
+      to: email,
+      subject: "Verify your email",
+      html: `
+      <p> Use the following token to verify your email: <strong>${verificationToken}</strong></p>
+      <p>Or visit the link to verify: <a target="_blank" href="${BASE_URL}/api/users/verify/${verificationToken}">Click to verify email</a></p>
+      `,
+    };
+
+    await sendEmail(verifyEmail);
+
     res.status(201).json({
       status: "created",
       code: 201,
@@ -56,6 +71,13 @@ const loginUser = async (req, res, next) => {
       });
     }
 
+    if (!existingUser.verify) {
+      return res.status(401).json({
+        status: "unauthorized",
+        code: 401,
+        message: "Email not verify",
+      });
+    }
     const payload = {
       id: existingUser.id,
     };
@@ -167,6 +189,67 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
+const verify = async (req, res) => {
+  const { verificationToken } = req.params;
+  try {
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+    await User.findByIdAndUpdate(user._id, {
+      verify: true,
+      verificationToken: null,
+    });
+    return res.status(200).json({
+      message: "Verification successful",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendVerifyEmail = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!email) {
+      return res.status(400).json({
+        message: "missing required field email",
+      });
+    }
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+    if (user.verify) {
+      return res.status(400).json({
+        message: "Verification has already been passed",
+      });
+    }
+
+    const verifyEmail = {
+      to: email,
+      subject: "Verify your email",
+      html: `
+      <p> Use the following token to verify your email: <strong>${user.verificationToken}</strong></p>
+      <p>Or visit the link to verify: <a target="_blank" href="${BASE_URL}/api/users/verify/${user.verificationToken}">Click to verify email</a></p>
+      `,
+    };
+
+    await sendEmail(verifyEmail);
+
+    return res.status(200).json({
+      message: "Verification email sent",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   signupUser,
   loginUser,
@@ -174,4 +257,6 @@ module.exports = {
   logoutUser,
   updateSubscription,
   updateAvatar,
+  verify,
+  resendVerifyEmail,
 };
